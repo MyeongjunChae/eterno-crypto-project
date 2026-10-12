@@ -45,6 +45,7 @@ jobs:
           chmod +x "$install_dir/suiup"
           echo "$install_dir" >> "$GITHUB_PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          export PATH="$install_dir:$HOME/.local/bin:$PATH"
           "$install_dir/suiup" --github-token "$SUIUP_GITHUB_TOKEN" install sui@mainnet-1.81.1
           sui --version
 
