@@ -1,0 +1,16 @@
+# Local secrets and wallet material
+.env
+.env.*
+!.env.example
+*.keystore
+*.pem
+*.key
+*.seed
+*.mnemonic
+wallet.json
+sui.keystore
+sui_config/
+
+# Build output
+build/
+target/
