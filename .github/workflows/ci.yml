@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Test route advisor
+        working-directory: route-advisor
+        run: npm test
+
+      - name: Install pinned Sui CLI
+        shell: bash
+        env:
+          HOME: ${{ runner.temp }}/sui-home
+        run: |
+          set -euo pipefail
+          install_dir="$RUNNER_TEMP/suiup"
+          mkdir -p "$install_dir" "$HOME/.local/bin"
+          archive="$install_dir/suiup.tar.gz"
+          checksum="$install_dir/suiup.tar.gz.sha256"
+          curl -fsSL \
+            https://github.com/MystenLabs/suiup/releases/download/v0.1.1/suiup-Linux-musl-x86_64.tar.gz \
+            -o "$archive"
+          curl -fsSL \
+            https://github.com/MystenLabs/suiup/releases/download/v0.1.1/suiup-Linux-musl-x86_64.tar.gz.sha256 \
+            -o "$checksum"
+          expected="$(awk '{print $1}' "$checksum")"
+          test "$expected" = "9c5edded34ce0af8772f4e2e8be9ad959bebe481ad5d2a3dbe0a68fb183353685"
+          echo "$expected  $archive" | sha256sum --check
+          tar -xzf "$archive" -C "$install_dir" suiup
+          chmod +x "$install_dir/suiup"
+          echo "$install_dir" >> "$GITHUB_PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$install_dir/suiup" install sui@mainnet-1.81.1
+          sui --version
+
+      - name: Build and test Move package
+        shell: bash
+        env:
+          HOME: ${{ runner.temp }}/sui-home
+        run: |
+          set -euo pipefail
+          config="$HOME/.sui/sui_config"
+          cleanup() {
+            rm -f "$config/client.yaml" "$config/sui.keystore" "$config/sui.aliases" \
+              "$config/external.aliases" "$config/external.keystore"
+            rmdir "$config" "$HOME/.sui" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          log="$RUNNER_TEMP/move-build.log"
+          if ! sui move build --build-env mainnet >"$log" 2>&1; then
+            sed -E 's/(secret recovery phrase[[:space:]]*:[[:space:]]*)\[[^]]*\]/\1[REDACTED]/I' "$log"
+            exit 1
+          fi
+          grep -E 'INCLUDING DEPENDENCY|BUILDING|warning\[' "$log" || true
+
+          if ! sui move test --build-env mainnet >"$log" 2>&1; then
+            sed -E 's/(secret recovery phrase[[:space:]]*:[[:space:]]*)\[[^]]*\]/\1[REDACTED]/I' "$log"
+            exit 1
+          fi
+          grep -E 'INCLUDING DEPENDENCY|BUILDING|Running Move unit tests|\[ PASS|Test result:' "$log" || true

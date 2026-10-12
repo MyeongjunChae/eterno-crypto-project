@@ -21,10 +21,10 @@ Source code, package and transaction data, token type, balances, and other on-ch
 
 ## Prerequisites
 
-- A current Sui CLI with Move 2024 support, installed from the [official Sui documentation](https://docs.sui.io/guides/developer/getting-started).
+- Sui CLI `1.81.1` with Move 2024 support, installed using the official [suiup](https://github.com/MystenLabs/suiup) version manager and verified against its published checksum.
 - A Sui address and enough SUI for gas on the selected network.
 
-The Move package resolves the Sui framework from its `framework/mainnet` branch. For a reproducible release, build and test with a recorded Sui CLI version and reviewed dependency lockfile.
+The Move package resolves the Sui framework from its `framework/mainnet` branch. `Move.lock` pins the framework commit used by the Sui CLI 1.81.1 mainnet and testnet builds; review and commit lockfile changes when updating dependencies.
 
 ## Build and test
 
@@ -32,11 +32,13 @@ From this directory:
 
 ```powershell
 sui --version
-sui move build
-sui move test
+sui move build --build-env mainnet
+sui move test --build-env mainnet
 ```
 
 The unit test checks that the configured raw amount equals `999,999 × 10^9` and represents exactly 999,999 whole Eterno. The Move build and test commands also validate the package against the resolved Sui framework.
+
+Install the pinned mainnet CLI with `suiup install sui@mainnet-1.81.1` (or `suiup install sui@testnet-1.81.1` for testnet). CI runs the Move build and unit tests against the mainnet framework and tests the route advisor with Node.js 24.
 
 ## Testnet smoke test
 
@@ -51,6 +53,8 @@ sui client active-address
 Inspect the active address before proceeding. Then publish the package:
 
 ```powershell
+sui move build --build-env testnet
+sui move test --build-env testnet
 sui client publish --gas-budget 100000000
 ```
 
@@ -59,7 +63,7 @@ The publish transaction runs `init`, creates and fixes the supply, deletes the m
 The OTW-based Currency standard uses a second transaction to register that Currency in the shared registry. Substitute the two IDs from the publish result:
 
 ```powershell
-sui client ptb --assign currency_to_promote "@0xCURRENCY_OBJECT_ID" --move-call 0x2::coin_registry::finalize_registration "0xPACKAGE_ID::eterno::ETERNO" "@0xc" currency_to_promote --gas-budget 100000000
+sui client ptb --assign currency_to_promote "@0xCURRENCY_OBJECT_ID" --move-call 0x2::coin_registry::finalize_registration "<0xPACKAGE_ID::eterno::ETERNO>" "@0xc" currency_to_promote --gas-budget 100000000
 ```
 
 Check the transaction effects and the Sui explorer for the shared Currency, its `E` metadata, the publisher's received coin, and the fixed supply state. The registration call is permissionless and only completes metadata registration; it cannot mint or change the supply.
@@ -75,15 +79,26 @@ Only after the build, tests, testnet publish, registration, and on-chain checks 
 
 ```powershell
 sui client switch --env mainnet
+sui client active-env
 sui client active-address
-sui move build
-sui move test
+sui move build --build-env mainnet
+sui move test --build-env mainnet
 sui client publish --gas-budget 100000000
 ```
 
 If mainnet has not been configured yet, add the official mainnet fullnode first with `sui client new-env --alias mainnet --rpc https://fullnode.mainnet.sui.io:443`. Verify `sui client active-env` and `sui client active-address` before signing. Review the CLI's transaction summary before approving; never paste a key or recovery phrase into chat or commit it here.
 
 The fixed-supply state prevents further minting and burning through the Sui Currency framework. Do not claim that the token is live until the mainnet publish and registry-registration transactions both succeed and their effects have been independently checked.
+
+### Getting exactly 1 E
+
+If you publish from the wallet where you want to hold Eterno, that wallet receives the entire initial supply, so it already holds at least 1 E; no self-transfer is needed. To send exactly 1 E to a different address, find the full-supply Eterno coin object created by the successful publish in the sender's owned objects and substitute its coin object ID and the intended recipient's Sui address:
+
+```powershell
+sui client ptb --split-coins "@0xFULL_SUPPLY_COIN_OBJECT_ID" "[1000000000]" --assign one_e --transfer-objects "[one_e.0]" "@0xRECIPIENT_ADDRESS" --gas-budget 100000000
+```
+
+The split amount is in base units: with 9 decimals, `1 E = 1,000,000,000` base units. The PTB keeps the remainder in the original coin and transfers only the split coin. Verify the active network and sender with `sui client active-env` and `sui client active-address`, and check the recipient address before signing. This transfer uses SUI for gas; it does not mint Eterno. Add `--preview` to inspect the PTB without submitting it. Do not run the command until Eterno is deployed to the intended network and the coin object ID is verified.
 
 ## AI-assisted route recommendations
 
@@ -130,7 +145,9 @@ The Eterno contract in this repository exists only for Sui. The advisor alone ca
 
 ```text
 Move.toml
+Move.lock
 sources/eterno.move
+.github/workflows/ci.yml
 route-advisor/
   package.json
   src/

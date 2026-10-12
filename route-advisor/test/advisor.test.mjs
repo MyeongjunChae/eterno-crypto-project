@@ -58,7 +58,10 @@ test("returns only a route ID present in fresh quotes", async () => {
   const recommendation = await recommendRoute(quoteSet, {
     apiKey: "test-key",
     model: "test-model",
-    clock: () => now,
+    clock: (() => {
+      let calls = 0;
+      return () => now + (++calls === 1 ? 0 : 1_000);
+    })(),
     fetchImpl: async (_url, request) => {
       const body = JSON.parse(request.body);
       assert.equal(body.messages[1].content.includes('"protocol":"Ethena"'), true);
@@ -78,6 +81,7 @@ test("returns only a route ID present in fresh quotes", async () => {
 
   assert.equal(recommendation.selectedRoute.id, "sui-route");
   assert.equal(recommendation.executed, false);
+  assert.equal(recommendation.generatedAt, new Date(now + 1_000).toISOString());
 });
 
 test("rejects AI-selected routes absent from the quote set", async () => {

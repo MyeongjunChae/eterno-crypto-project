@@ -121,7 +121,8 @@ export async function recommendRoute(input, {
   } catch {
     throw new Error("AI provider did not return valid JSON.");
   }
-  const currentQuotes = validateQuoteSet(input, clock());
+  const decisionAt = clock();
+  const currentQuotes = validateQuoteSet(input, decisionAt);
   const selectedRoute = currentQuotes.routes.find((route) => route.id === decision.selectedRouteId);
   if (!selectedRoute) {
     throw new Error("AI selected a route that is not in the current provider quotes.");
@@ -139,7 +140,7 @@ export async function recommendRoute(input, {
     selectedRoute,
     rationale: decision.rationale,
     caveats: decision.caveats,
-    generatedAt: new Date(clock()).toISOString(),
+    generatedAt: new Date(decisionAt).toISOString(),
     executed: false,
   };
 }

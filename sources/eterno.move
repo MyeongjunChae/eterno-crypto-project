@@ -3,8 +3,6 @@ module eterno::eterno;
 use std::string;
 use sui::coin::{Self, Coin};
 use sui::coin_registry;
-use sui::transfer;
-use sui::tx_context::TxContext;
 
 const DECIMALS: u8 = 9;
 const BASE_UNITS: u64 = 1_000_000_000;
