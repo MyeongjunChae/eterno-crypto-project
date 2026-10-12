@@ -141,6 +141,12 @@ The numbers above illustrate the input format only; they are not live quotes. Ob
 
 The Eterno contract in this repository exists only for Sui. The advisor alone cannot move Eterno to another chain. Before adding cross-chain Eterno routes, select and audit a bridge/issuer design that accounts for the 999,999-token cap across **all** networks. Deploying independent supplies on Sui, Ethereum, and Solana would multiply the total supply and violate the fixed-supply promise. No bridge, wrapped Eterno, or other-chain token deployment is included here.
 
+## Non-custodial swap UI
+
+`exchange-ui/` contains a Sui wallet-connected interface for obtaining Cetus aggregator quotes and swapping SUI↔Eterno. Users review and sign every transaction in their wallet; the app does not custody assets or keys. It supports selecting Sui testnet or mainnet and verifies the configured on-chain Eterno metadata before enabling swaps.
+
+Eterno has not been deployed to mainnet and no Eterno liquidity is configured, so live Eterno routes are not yet available. After publishing E on a network, configure that network's `VITE_E_TOKEN_TYPE_*` in `exchange-ui/.env.local`; a DEX liquidity pool is separately required before a route can be quoted. Follow [`exchange-ui/README.md`](exchange-ui/README.md) for local setup and the important transaction/risk limitations.
+
 ## Project layout
 
 ```text
@@ -149,6 +155,10 @@ Move.lock
 sources/eterno.move
 .github/workflows/ci.yml
 route-advisor/
+  package.json
+  src/
+  test/
+exchange-ui/
   package.json
   src/
   test/

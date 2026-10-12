@@ -21,6 +21,13 @@ jobs:
         working-directory: route-advisor
         run: npm test
 
+      - name: Install and validate exchange UI
+        working-directory: exchange-ui
+        run: |
+          npm ci
+          npm test
+          npm run build
+
       - name: Download suiup
         shell: bash
         run: |

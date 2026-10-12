@@ -12,6 +12,8 @@ sui.keystore
 sui_config/
 node_modules/
 .npm/
+dist/
+.vite/
 
 # Build output
 build/
