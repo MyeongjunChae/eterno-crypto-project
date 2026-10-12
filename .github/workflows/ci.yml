@@ -36,10 +36,8 @@ jobs:
             https://github.com/MystenLabs/suiup/releases/download/v0.1.1/suiup-Linux-musl-x86_64.tar.gz.sha256 \
             -o "$checksum"
 
-      - name: Verify and extract suiup
+      - name: Verify suiup checksum
         shell: bash
-        env:
-          HOME: ${{ runner.temp }}/sui-home
         run: |
           set -euo pipefail
           install_dir="$RUNNER_TEMP/suiup"
@@ -48,6 +46,15 @@ jobs:
           expected="$(awk '{print $1}' "$checksum")"
           test "$expected" = "9c5edded34ce0af8772f4e2e8be9ad959bebe481ad5d2a3dbe0a68fb183353685"
           echo "$expected  $archive" | sha256sum --check
+
+      - name: Extract suiup
+        shell: bash
+        env:
+          HOME: ${{ runner.temp }}/sui-home
+        run: |
+          set -euo pipefail
+          install_dir="$RUNNER_TEMP/suiup"
+          archive="$install_dir/suiup.tar.gz"
           mkdir -p "$HOME/.local/bin"
           tar -xzf "$archive" -C "$install_dir" suiup
           chmod +x "$install_dir/suiup"
