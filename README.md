@@ -59,7 +59,7 @@ The publish transaction runs `init`, creates and fixes the supply, deletes the m
 The OTW-based Currency standard uses a second transaction to register that Currency in the shared registry. Substitute the two IDs from the publish result:
 
 ```powershell
-sui client ptb --assign currency_to_promote @0xCURRENCY_OBJECT_ID --move-call 0x2::coin_registry::finalize_registration "0xPACKAGE_ID::eterno::ETERNO" @0xc currency_to_promote --gas-budget 100000000
+sui client ptb --assign currency_to_promote "@0xCURRENCY_OBJECT_ID" --move-call 0x2::coin_registry::finalize_registration "0xPACKAGE_ID::eterno::ETERNO" "@0xc" currency_to_promote --gas-budget 100000000
 ```
 
 Check the transaction effects and the Sui explorer for the shared Currency, its `E` metadata, the publisher's received coin, and the fixed supply state. The registration call is permissionless and only completes metadata registration; it cannot mint or change the supply.
