@@ -21,14 +21,12 @@ jobs:
         working-directory: route-advisor
         run: npm test
 
-      - name: Download and verify suiup
+      - name: Download suiup
         shell: bash
-        env:
-          HOME: ${{ runner.temp }}/sui-home
         run: |
           set -euo pipefail
           install_dir="$RUNNER_TEMP/suiup"
-          mkdir -p "$install_dir" "$HOME/.local/bin"
+          mkdir -p "$install_dir"
           archive="$install_dir/suiup.tar.gz"
           checksum="$install_dir/suiup.tar.gz.sha256"
           curl -fsSL \
@@ -37,9 +35,20 @@ jobs:
           curl -fsSL \
             https://github.com/MystenLabs/suiup/releases/download/v0.1.1/suiup-Linux-musl-x86_64.tar.gz.sha256 \
             -o "$checksum"
+
+      - name: Verify and extract suiup
+        shell: bash
+        env:
+          HOME: ${{ runner.temp }}/sui-home
+        run: |
+          set -euo pipefail
+          install_dir="$RUNNER_TEMP/suiup"
+          archive="$install_dir/suiup.tar.gz"
+          checksum="$install_dir/suiup.tar.gz.sha256"
           expected="$(awk '{print $1}' "$checksum")"
           test "$expected" = "9c5edded34ce0af8772f4e2e8be9ad959bebe481ad5d2a3dbe0a68fb183353685"
           echo "$expected  $archive" | sha256sum --check
+          mkdir -p "$HOME/.local/bin"
           tar -xzf "$archive" -C "$install_dir" suiup
           chmod +x "$install_dir/suiup"
           echo "$install_dir" >> "$GITHUB_PATH"
