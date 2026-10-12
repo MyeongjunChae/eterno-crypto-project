@@ -25,6 +25,7 @@ jobs:
         shell: bash
         env:
           HOME: ${{ runner.temp }}/sui-home
+          SUIUP_GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           install_dir="$RUNNER_TEMP/suiup"
@@ -44,7 +45,7 @@ jobs:
           chmod +x "$install_dir/suiup"
           echo "$install_dir" >> "$GITHUB_PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          "$install_dir/suiup" install sui@mainnet-1.81.1
+          "$install_dir/suiup" --github-token "$SUIUP_GITHUB_TOKEN" install sui@mainnet-1.81.1
           sui --version
 
       - name: Build and test Move package
