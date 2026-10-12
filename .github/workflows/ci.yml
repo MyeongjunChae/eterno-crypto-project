@@ -44,8 +44,16 @@ jobs:
           archive="$install_dir/suiup.tar.gz"
           checksum="$install_dir/suiup.tar.gz.sha256"
           expected="$(awk '{print $1}' "$checksum")"
-          test "$expected" = "9c5edded34ce0af8772f4e2e8be9ad959bebe481ad5d2a3dbe0a68fb183353685"
-          echo "$expected  $archive" | sha256sum --check
+          pinned="9c5edded34ce0af8772f4e2e8be9ad959bebe481ad5d2a3dbe0a68fb183353685"
+          if [[ "$expected" != "$pinned" ]]; then
+            echo "::error::Suiup checksum sidecar differs from the pinned release digest."
+            exit 1
+          fi
+          actual="$(sha256sum "$archive" | awk '{print $1}')"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "::error::Downloaded Suiup archive checksum mismatch: $actual"
+            exit 1
+          fi
 
       - name: Extract suiup
         shell: bash
