@@ -21,11 +21,10 @@ jobs:
         working-directory: route-advisor
         run: npm test
 
-      - name: Install pinned Sui CLI
+      - name: Download and verify suiup
         shell: bash
         env:
           HOME: ${{ runner.temp }}/sui-home
-          SUIUP_GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           install_dir="$RUNNER_TEMP/suiup"
@@ -45,8 +44,24 @@ jobs:
           chmod +x "$install_dir/suiup"
           echo "$install_dir" >> "$GITHUB_PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned Sui CLI
+        shell: bash
+        env:
+          HOME: ${{ runner.temp }}/sui-home
+          SUIUP_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          install_dir="$RUNNER_TEMP/suiup"
           export PATH="$install_dir:$HOME/.local/bin:$PATH"
           "$install_dir/suiup" --github-token "$SUIUP_GITHUB_TOKEN" install sui@mainnet-1.81.1
+
+      - name: Verify Sui CLI
+        shell: bash
+        env:
+          HOME: ${{ runner.temp }}/sui-home
+        run: |
+          set -euo pipefail
           sui --version
 
       - name: Build and test Move package
